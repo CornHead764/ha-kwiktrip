@@ -57,7 +57,7 @@ class KwikTripFuelSensor(CoordinatorEntity[KwikTripCoordinator], SensorEntity):
     _attr_native_unit_of_measurement = "USD/gal"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:gas-station"
-    _attr_suggested_display_precision = 3
+    _attr_suggested_display_precision = 2
 
     def __init__(
         self,
@@ -92,7 +92,9 @@ class KwikTripFuelSensor(CoordinatorEntity[KwikTripCoordinator], SensorEntity):
         if fuel is None:
             return None
         price = fuel.get("currentPrice")
-        return float(price) if price is not None else None
+        if price is None:
+            return None
+        return int(float(price) * 100) / 100
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

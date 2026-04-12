@@ -1,20 +1,14 @@
 """Config flow for Kwik Trip."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import (
-    NumberSelector,
-    NumberSelectorConfig,
-    NumberSelectorMode,
-    SelectOptionDict,
-    SelectSelector,
-    SelectSelectorConfig,
-    SelectSelectorMode,
-)
 
 from .api import KwikTripApiError, KwikTripClient
 from .const import (
@@ -26,8 +20,11 @@ from .const import (
     DOMAIN,
 )
 
+_LOGGER = logging.getLogger(__name__)
 
-class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
+
+@config_entries.HANDLERS.register(DOMAIN)
+class KwikTripConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the Kwik Trip config flow."""
 
     VERSION = 1
@@ -51,7 +48,8 @@ class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
                     longitude=user_input[CONF_LONGITUDE],
                     max_distance=user_input[CONF_MAX_DISTANCE],
                 )
-            except KwikTripApiError:
+            except KwikTripApiError as err:
+                _LOGGER.error("Kwik Trip search failed: %s", err)
                 errors["base"] = "cannot_connect"
             else:
                 if not stores:
@@ -63,26 +61,16 @@ class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_LATITUDE, default=default_lat): NumberSelector(
-                    NumberSelectorConfig(
-                        min=-90, max=90, step=0.0001, mode=NumberSelectorMode.BOX
-                    )
-                ),
-                vol.Required(CONF_LONGITUDE, default=default_lon): NumberSelector(
-                    NumberSelectorConfig(
-                        min=-180, max=180, step=0.0001, mode=NumberSelectorMode.BOX
-                    )
-                ),
+                vol.Required(CONF_LATITUDE, default=default_lat): cv.latitude,
+                vol.Required(CONF_LONGITUDE, default=default_lon): cv.longitude,
                 vol.Required(
                     CONF_MAX_DISTANCE, default=DEFAULT_MAX_DISTANCE
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        min=1, max=500, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="mi"
-                    )
-                ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=500)),
             }
         )
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        return self.async_show_form(
+            step_id="user", data_schema=schema, errors=errors
+        )
 
     async def async_step_select(
         self, user_input: dict[str, Any] | None = None
@@ -90,7 +78,10 @@ class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            store_ids = [int(sid) for sid in user_input[CONF_STORE_IDS]]
+            raw = user_input.get(CONF_STORE_IDS) or []
+            if isinstance(raw, str):
+                raw = [raw]
+            store_ids = [int(sid) for sid in raw]
             if not store_ids:
                 errors["base"] = "no_selection"
             else:
@@ -103,22 +94,12 @@ class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={**self._search_params, CONF_STORE_IDS: store_ids},
                 )
 
-        options = [
-            SelectOptionDict(
-                value=str(store["id"]),
-                label=_format_store_label(store),
-            )
-            for store in self._stores
-        ]
+        choices = {
+            str(store["id"]): _format_store_label(store) for store in self._stores
+        }
         schema = vol.Schema(
             {
-                vol.Required(CONF_STORE_IDS): SelectSelector(
-                    SelectSelectorConfig(
-                        options=options,
-                        multiple=True,
-                        mode=SelectSelectorMode.LIST,
-                    )
-                ),
+                vol.Required(CONF_STORE_IDS): cv.multi_select(choices),
             }
         )
         return self.async_show_form(
@@ -129,10 +110,6 @@ class KwikTripConfigFlow(ConfigFlow, domain=DOMAIN):
 def _format_store_label(store: dict[str, Any]) -> str:
     name = store.get("name") or f"Kwik Trip #{store.get('id')}"
     addr = store.get("address") or {}
-    pieces = [
-        addr.get("address1"),
-        addr.get("city"),
-        addr.get("state"),
-    ]
+    pieces = [addr.get("address1"), addr.get("city"), addr.get("state")]
     loc = ", ".join(p for p in pieces if p)
     return f"{name} — {loc}" if loc else name
