@@ -1,0 +1,11 @@
+{
+  "domain": "kwiktrip",
+  "name": "Kwik Trip",
+  "codeowners": ["@CornHead764"],
+  "config_flow": true,
+  "documentation": "https://github.com/CornHead764/ha-kwiktrip",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/CornHead764/ha-kwiktrip/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

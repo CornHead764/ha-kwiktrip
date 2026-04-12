@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Search Kwik Trip stores",
+        "description": "Defaults to your Home Assistant location. Results are limited to 100 stores within the selected distance.",
+        "data": {
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "max_distance": "Max distance (miles)"
+        }
+      },
+      "select": {
+        "title": "Select stores",
+        "description": "Pick one or more stores to track.",
+        "data": {
+          "store_ids": "Stores"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to reach the Kwik Trip locator service.",
+      "no_stores": "No stores found within that radius.",
+      "no_selection": "Select at least one store."
+    },
+    "abort": {
+      "already_configured": "These stores are already configured."
+    }
+  }
+}
