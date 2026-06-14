@@ -8,7 +8,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import KwikTripApiError, KwikTripClient
+from .api import KwikTripClient
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,13 +33,10 @@ class KwikTripCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         self.store_ids = store_ids
 
     async def _async_update_data(self) -> dict[int, dict[str, Any]]:
-        try:
-            results = await asyncio.gather(
-                *(self.client.get_store(sid) for sid in self.store_ids),
-                return_exceptions=True,
-            )
-        except KwikTripApiError as err:
-            raise UpdateFailed(str(err)) from err
+        results = await asyncio.gather(
+            *(self.client.get_store(sid) for sid in self.store_ids),
+            return_exceptions=True,
+        )
 
         data: dict[int, dict[str, Any]] = {}
         for sid, result in zip(self.store_ids, results):

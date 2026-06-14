@@ -1,6 +1,7 @@
 """Client for the Kwik Trip locproxy endpoint."""
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import aiohttp
@@ -61,7 +62,6 @@ class KwikTripClient:
         except aiohttp.ClientError as err:
             raise KwikTripApiError(str(err)) from err
         try:
-            import json
             return json.loads(text.lstrip("\ufeff"))
         except ValueError as err:
             snippet = text[:200].replace("\n", " ")
