@@ -33,7 +33,7 @@ successful value is retained until the next poll.
 ### Via HACS (recommended)
 
 1. HACS → three-dot menu → **Custom repositories** → add
-   `https://github.com/CornHead764/ha-kwiktrip` as an **Integration**.
+   `https://git.lody.co/Cory/ha-kwiktrip` as an **Integration**.
 2. Install **Kwik Trip** from HACS.
 3. Restart Home Assistant.
 4. Settings → Devices & services → **Add integration** → *Kwik Trip*.
