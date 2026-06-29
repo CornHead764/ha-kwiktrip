@@ -57,7 +57,7 @@ class KwikTripFuelSensor(CoordinatorEntity[KwikTripCoordinator], SensorEntity):
     _attr_native_unit_of_measurement = "USD/gal"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:gas-station"
-    _attr_suggested_display_precision = 3
+    _attr_suggested_display_precision = 2
 
     def __init__(
         self,
@@ -95,7 +95,9 @@ class KwikTripFuelSensor(CoordinatorEntity[KwikTripCoordinator], SensorEntity):
         if price is None:
             return None
         try:
-            return round(float(price), 3)
+            # Truncate (not round) to 2 decimals: Kwik Trip publishes prices
+            # like 4.999 and we intentionally drop the trailing .9 -> 4.99.
+            return int(float(price) * 100) / 100
         except (TypeError, ValueError):
             return None
 
